@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+           background-color: #EAFAF1 ;
+            font-family: Georgia, sans-serif;
+            text-align: center;
+            color:#9FE2D9 ;
+        }
+      
+        #taskInput, #priorityInput {
+            width: 30%;
+            padding: 10px;
+        }
+        #taskList {
+            list-style-type: none;
+            padding: 0;
+        }
+        .taskItem {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #FFBF00;
+            margin: 5px;
+            padding: 10px;
+        }
+        .deleteBtn, .editBtn, .statusBtn {
+            margin-left: 10px;
+            cursor:alias;
+        }
+        .priority-high {
+            color: red;
+        }
+        .priority-medium {
+            color: orange;
+        }
+        .priority-low {
+            color: green;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #DE3163;
+        }
+    </style>
+    <title>Task Manager</title>
+</head>
+<body>
+    <h2> YOUR REMINDER </h2>
+    <input type="text" id="taskInput" placeholder="NEW TASK">
+    <select id="priorityInput">
+        <option value="high">High Priority</option>
+        <option value="medium">Medium Priority</option>
+        <option value="low">Low Priority</option>
+    </select>
+    <button onclick="addTask()">Add Task</button>
+
+    <ul id="taskList"></ul>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadTasks);
+
+        function addTask() {
+            var taskInput = document.getElementById("taskInput");
+            var priorityInput = document.getElementById("priorityInput");
+            var taskList = document.getElementById("taskList");
+
+            if (taskInput.value.trim() === "") {
+                alert("Please enter a task.");
+                return;
+            }
+
+            var taskItem = document.createElement("li");
+            var priorityClass = getPriorityClass(priorityInput.value);
+
+            var taskObject = {
+                name: taskInput.value,
+                priority: priorityInput.value,
+                status: "pending"
+            };
+
+            taskItem.className = "taskItem " + priorityClass;
+            taskItem.setAttribute("data-task", JSON.stringify(taskObject));
+
+            taskItem.innerHTML = `
+                <span>${taskInput.value}</span>
+                <button class="editBtn" onclick="editTask(this)">Edit</button>
+                <button class="deleteBtn" onclick="deleteTask(this)">Delete</button>
+                <button class="statusBtn" onclick="toggleStatus(this)">Mark ${taskObject.status === "pending" ? 'Complete' : 'Pending'}</button>
+            `;
+
+            taskList.appendChild(taskItem);
+
+            saveTasks();
+
+            taskInput.value = "";
+        }
+
+        function editTask(btn) {
+            var taskItem = btn.parentElement;
+            var taskObject = JSON.parse(taskItem.getAttribute("data-task"));
+            var newName = prompt("Edit task:", taskObject.name);
+
+            if (newName !== null && newName.trim() !== "") {
+                taskObject.name = newName;
+                taskItem.querySelector("span").innerText = newName;
+                taskItem.setAttribute("data-task", JSON.stringify(taskObject));
+                saveTasks();
+            }
+        }
+
+        function deleteTask(btn) {
+            var taskItem = btn.parentElement;
+            taskItem.remove();
+            saveTasks();
+        }
+
+        function toggleStatus(btn) {
+            var taskItem = btn.parentElement;
+            var taskObject = JSON.parse(taskItem.getAttribute("data-task"));
+
+            taskObject.status = (taskObject.status === "pending") ? "completed" : "pending";
+            taskItem.querySelector("span").classList.toggle("completed");
+            taskItem.querySelector(".statusBtn").innerText = "Mark " + (taskObject.status === "pending" ? 'Complete' : 'Pending');
+
+            taskItem.setAttribute("data-task", JSON.stringify(taskObject));
+            saveTasks();
+        }
+
+        function getPriorityClass(priority) {
+            switch (priority) {
+                case "high":
+                    return "priority-high";
+                case "medium":
+                    return "priority-medium";
+                case "low":
+                    return "priority-low";
+                default:
+                    return "";
+            }
+        }
+
+        function saveTasks() {
+            var taskList = document.getElementById("taskList");
+            var tasks = [];
+
+            for (var i = 0; i < taskList.children.length; i++) {
+                var taskObject = JSON.parse(taskList.children[i].getAttribute("data-task"));
+                tasks.push(taskObject);
+            }
+
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            var taskList = document.getElementById("taskList");
+            var tasks = localStorage.getItem("tasks");
+
+            if (tasks) {
+                tasks = JSON.parse(tasks);
+
+                for (var i = 0; i < tasks.length; i++) {
+                    var taskItem = document.createElement("li");
+                    var priorityClass = getPriorityClass(tasks[i].priority);
+                    var statusClass = tasks[i].status === "completed" ? "completed" : "";
+
+                    taskItem.className = "taskItem " + priorityClass;
+                    taskItem.setAttribute("data-task", JSON.stringify(tasks[i]));
+
+                    taskItem.innerHTML = `
+                        <span class="${statusClass}">${tasks[i].name}</span>
+                        <button class="editBtn" onclick="editTask(this)">Edit</button>
+                        <button class="deleteBtn" onclick="deleteTask(this)">Delete</button>
+                        <button class="statusBtn" onclick="toggleStatus(this)">Mark ${tasks[i].status === "pending" ? 'Complete' : 'Pending'}</button>
+                    `;
+
+                    taskList.appendChild(taskItem);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
